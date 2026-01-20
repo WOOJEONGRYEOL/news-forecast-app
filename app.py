@@ -1010,11 +1010,14 @@ def main():
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            trend_change = fc["trend"].iloc[-1] - fc["trend"].iloc[0]
+            trend_start = fc["trend"].iloc[0]
+            trend_end = fc["trend"].iloc[-1]
+            trend_change = trend_end - trend_start
             st.metric(
                 "추세 변화",
-                f"{trend_change:+.3f}%",
-                delta=f"{'↑' if trend_change > 0 else '↓'} {abs(trend_change):.3f}%"
+                f"{trend_end:.3f}%",
+                delta=f"{trend_change:+.3f}%",
+                help=f"시작: {trend_start:.3f}% → 종료: {trend_end:.3f}%"
             )
 
         with col2:
