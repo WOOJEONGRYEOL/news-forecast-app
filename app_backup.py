@@ -3,25 +3,13 @@
 # ============================================================
 
 import streamlit as st
-
-# 디버깅: import 오류 확인
-try:
-    import pandas as pd
-    import plotly.graph_objects as go
-    import plotly.express as px
-    from datetime import datetime, timedelta
-    import os
-    import pickle
-except Exception as e:
-    st.error(f"기본 라이브러리 import 오류: {e}")
-    st.stop()
-
-try:
-    from forecaster import NewsViewershipForecaster
-except Exception as e:
-    st.error(f"Forecaster import 오류: {e}")
-    st.exception(e)
-    st.stop()
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime, timedelta
+import os
+import pickle
+from forecaster import NewsViewershipForecaster
 
 # 페이지 설정
 st.set_page_config(
