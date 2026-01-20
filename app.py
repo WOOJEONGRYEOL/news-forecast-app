@@ -1029,15 +1029,28 @@ def main():
                 )
 
         with col3:
+            # 일몰 효과 계산 (이미 위에서 계산됨)
             if 'sunset_time' in fc.columns:
-                sunset_min = fc["sunset_time"].min()
-                sunset_max = fc["sunset_time"].max()
-                sunset_first = fc["sunset_time"].iloc[0]
-                sunset_last = fc["sunset_time"].iloc[-1]
+                # 실제 일몰 시각 범위
+                actual_sunset_min = fc["sunset_time"].min()
+                actual_sunset_max = fc["sunset_time"].max()
+
+                # 일몰 효과 (시청률에 미치는 영향)
+                sunset_effect_calc = fc["yhat"].copy()
+                if 'trend' in fc.columns:
+                    sunset_effect_calc = sunset_effect_calc - fc["trend"]
+                if 'weekly' in fc.columns:
+                    sunset_effect_calc = sunset_effect_calc - fc["weekly"]
+                if 'yearly' in fc.columns:
+                    sunset_effect_calc = sunset_effect_calc - fc["yearly"]
+                if 'holidays' in fc.columns:
+                    sunset_effect_calc = sunset_effect_calc - fc["holidays"]
+
+                effect_range = sunset_effect_calc.max() - sunset_effect_calc.min()
                 st.metric(
-                    "일몰 시각 범위",
-                    f"{sunset_min:.1f}시 - {sunset_max:.1f}시",
-                    delta=f"{sunset_first:.1f}시 → {sunset_last:.1f}시"
+                    "일몰 효과 범위",
+                    f"±{effect_range/2:.3f}%",
+                    help=f"일몰 시각: {actual_sunset_min:.1f}시~{actual_sunset_max:.1f}시 (시청률 영향)"
                 )
             else:
                 st.metric("일몰 효과", f"±{sunset_effect.std():.3f}%")
