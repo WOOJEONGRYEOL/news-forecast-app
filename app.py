@@ -506,7 +506,7 @@ def main():
 
     # 초기 분석 실행
     if 'run_analysis' not in st.session_state:
-        st.session_state.run_analysis = True
+        st.session_state.run_analysis = False
 
     if st.session_state.run_analysis:
         with st.spinner("🔮 데이터 로드 및 Prophet 모델 실행 중..."):
