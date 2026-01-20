@@ -215,6 +215,13 @@ class NewsViewershipForecaster:
             fc['yhat_upper_90'] = fc_90['yhat_upper']
             fc["ds"] = pd.to_datetime(fc["ds"]).dt.normalize()
 
+            # 시청률은 0 이상이어야 하므로 음수 제거
+            fc['yhat'] = fc['yhat'].clip(lower=0)
+            fc['yhat_lower'] = fc['yhat_lower'].clip(lower=0)
+            fc['yhat_upper'] = fc['yhat_upper'].clip(lower=0)
+            fc['yhat_lower_90'] = fc['yhat_lower_90'].clip(lower=0)
+            fc['yhat_upper_90'] = fc['yhat_upper_90'].clip(lower=0)
+
             self.forecasts[en] = fc
             self.models[en] = m
 
