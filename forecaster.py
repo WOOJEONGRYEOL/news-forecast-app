@@ -191,7 +191,7 @@ class NewsViewershipForecaster:
                 seasonality_mode="additive",
                 seasonality_prior_scale=5.0,
                 holidays_prior_scale=5.0,
-                changepoint_prior_scale=0.05,
+                changepoint_prior_scale=0.1,
                 interval_width=0.95
             )
             m.add_seasonality(name="weekly", period=7, fourier_order=6)
