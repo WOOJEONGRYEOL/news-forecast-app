@@ -916,48 +916,84 @@ def main():
         if 'holidays' in fc.columns:
             sunset_effect = sunset_effect - fc["holidays"]
 
-        # 산점도: x축 = 일몰 시각, y축 = 일몰 효과
-        fig_scatter = go.Figure()
+        col1, col2 = st.columns(2)
 
-        # 날짜 정보를 customdata로 추가
-        date_strings = pd.to_datetime(fc["ds"]).dt.strftime('%Y-%m-%d')
-
-        fig_scatter.add_trace(go.Scatter(
-            x=fc["sunset_time"],
-            y=sunset_effect,
-            mode='markers',
-            marker=dict(
-                size=8,
-                color=fc["sunset_time"],
-                colorscale='Sunset',
-                showscale=True,
-                colorbar=dict(title="일몰 시각"),
-                line=dict(width=1, color='white')
-            ),
-            text=date_strings,
-            customdata=fc_with_day["day_kr"],
-            hovertemplate='<b>%{text}</b> (%{customdata})<br>일몰: %{x:.1f}시<br>시청률 효과: %{y:.3f}%p<extra></extra>'
-        ))
-
-        fig_scatter.update_layout(
-            plot_bgcolor='rgba(0, 0, 0, 0)',
-            paper_bgcolor='rgba(0, 0, 0, 0)',
-            font=dict(color='white'),
-            height=400,
-            margin=dict(l=20, r=20, t=20, b=20),
-            xaxis=dict(
-                title="일몰 시각 (24시)",
-                gridcolor='rgba(123, 47, 247, 0.2)'
-            ),
-            yaxis=dict(
-                title="시청률 효과 (%p)",
-                gridcolor='rgba(123, 47, 247, 0.2)',
-                zeroline=True,
-                zerolinecolor='rgba(255, 255, 255, 0.3)',
-                zerolinewidth=1
+        with col1:
+            # 일몰 시각 시계열
+            fig_sunset_time = go.Figure()
+            fig_sunset_time.add_trace(go.Scatter(
+                x=fc_with_day["ds"],
+                y=fc_with_day["sunset_time"],
+                mode='lines',
+                line=dict(color='#FFA500', width=2),
+                fill='tozeroy',
+                fillcolor='rgba(255, 165, 0, 0.1)',
+                name='일몰 시각',
+                customdata=fc_with_day["day_kr"],
+                hovertemplate='%{x|%Y-%m-%d} (%{customdata})<br>일몰: %{y:.1f}시<extra></extra>'
+            ))
+            fig_sunset_time.update_layout(
+                title="일몰 시각 변화",
+                plot_bgcolor='rgba(0, 0, 0, 0)',
+                paper_bgcolor='rgba(0, 0, 0, 0)',
+                font=dict(color='white'),
+                height=350,
+                margin=dict(l=20, r=20, t=40, b=20),
+                xaxis=dict(
+                    title="날짜",
+                    gridcolor='rgba(123, 47, 247, 0.2)'
+                ),
+                yaxis=dict(
+                    title="시각 (24시)",
+                    gridcolor='rgba(123, 47, 247, 0.2)'
+                )
             )
-        )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+            st.plotly_chart(fig_sunset_time, use_container_width=True)
+
+        with col2:
+            # 산점도: x축 = 일몰 시각, y축 = 일몰 효과
+            fig_scatter = go.Figure()
+
+            # 날짜 정보를 customdata로 추가
+            date_strings = pd.to_datetime(fc["ds"]).dt.strftime('%Y-%m-%d')
+
+            fig_scatter.add_trace(go.Scatter(
+                x=fc["sunset_time"],
+                y=sunset_effect,
+                mode='markers',
+                marker=dict(
+                    size=8,
+                    color=fc["sunset_time"],
+                    colorscale='Sunset',
+                    showscale=True,
+                    colorbar=dict(title="일몰 시각"),
+                    line=dict(width=1, color='white')
+                ),
+                text=date_strings,
+                customdata=fc_with_day["day_kr"],
+                hovertemplate='<b>%{text}</b> (%{customdata})<br>일몰: %{x:.1f}시<br>시청률 효과: %{y:.3f}%p<extra></extra>'
+            ))
+
+            fig_scatter.update_layout(
+                title="일몰-시청률 상관관계",
+                plot_bgcolor='rgba(0, 0, 0, 0)',
+                paper_bgcolor='rgba(0, 0, 0, 0)',
+                font=dict(color='white'),
+                height=350,
+                margin=dict(l=20, r=20, t=40, b=20),
+                xaxis=dict(
+                    title="일몰 시각 (24시)",
+                    gridcolor='rgba(123, 47, 247, 0.2)'
+                ),
+                yaxis=dict(
+                    title="시청률 효과 (%p)",
+                    gridcolor='rgba(123, 47, 247, 0.2)',
+                    zeroline=True,
+                    zerolinecolor='rgba(255, 255, 255, 0.3)',
+                    zerolinewidth=1
+                )
+            )
+            st.plotly_chart(fig_scatter, use_container_width=True)
 
         # 상관관계 통계 표시
         correlation = fc["sunset_time"].corr(sunset_effect)
