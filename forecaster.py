@@ -30,7 +30,10 @@ import requests
 import ephem
 
 warnings.filterwarnings("ignore")
-plt.rcParams["font.family"] = "DejaVu Sans"
+try:
+    plt.rcParams["font.family"] = "DejaVu Sans"
+except:
+    pass  # 폰트 설정 실패 시 무시
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.max_open_warning"] = 0
 
