@@ -782,7 +782,7 @@ def main():
                     tickfont=dict(size=12)
                 ),
                 yaxis=dict(
-                    title="시청률 영향 (%)",
+                    title="시청률 영향 (%p)",
                     gridcolor='rgba(123, 47, 247, 0.2)'
                 ),
                 showlegend=False
