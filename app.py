@@ -796,29 +796,45 @@ def main():
 
             st.info(f"📌 **최고**: {day_idx_to_kr[max_day['dayofweek']]}요일 (+{max_day['weekly']:.3f}%) | **최저**: {day_idx_to_kr[min_day['dayofweek']]}요일 ({min_day['weekly']:+.3f}%)")
 
-        # 3. Yearly Seasonality (연간 패턴)
-        if 'yearly' in fc.columns:
-            st.markdown("#### 🌍 연간 계절성 - 연중 패턴")
-            fig_yearly = go.Figure()
-            fig_yearly.add_trace(go.Scatter(
-                x=fc_with_day["ds"],
-                y=fc_with_day["yearly"],
-                mode='lines',
-                line=dict(color='#f107a3', width=2),
-                name='연간',
-                customdata=fc_with_day["day_kr"],
-                hovertemplate='%{x|%Y-%m-%d} (%{customdata})<br>효과: %{y:.3f}%<extra></extra>'
-            ))
-            fig_yearly.update_layout(
-                plot_bgcolor='rgba(0, 0, 0, 0)',
-                paper_bgcolor='rgba(0, 0, 0, 0)',
-                font=dict(color='white'),
-                height=300,
-                margin=dict(l=20, r=20, t=20, b=20),
-                xaxis=dict(gridcolor='rgba(123, 47, 247, 0.2)'),
-                yaxis=dict(gridcolor='rgba(123, 47, 247, 0.2)', title="효과")
-            )
-            st.plotly_chart(fig_yearly, use_container_width=True)
+        # 3. 연간 계절 효과 (연 계절성 + 일몰 시각을 하나로 합산)
+        # ⚠️ 일몰 시각은 연중 날짜만으로 정해지는 신호라 연 계절성과 거의 100% 겹칩니다(r≈1.0).
+        #    두 성분의 개별 계수는 서로 상쇄되며 부호가 뒤집혀 나올 수 있어(해석 함정),
+        #    개별로 그리지 않고 '연간 계절 효과' 하나로 합쳐서 표시합니다.
+        #    합산 효과 = yhat - trend - weekly - holidays  (= yearly + 일몰 기여의 합)
+        annual_effect = fc["yhat"].copy()
+        if 'trend' in fc.columns:
+            annual_effect = annual_effect - fc["trend"]
+        if 'weekly' in fc.columns:
+            annual_effect = annual_effect - fc["weekly"]
+        if 'holidays' in fc.columns:
+            annual_effect = annual_effect - fc["holidays"]
+
+        st.markdown("#### 🌍 연간 계절 효과 (계절성 + 일몰 시각 합산)")
+        st.caption(
+            "일몰 시각은 연 계절성과 거의 동일한 신호라 하나로 합쳐 표시합니다. "
+            "일몰만 따로 떼면 계수를 나눠 갖는 과정에서 부호가 뒤집혀 보이는 해석 함정이 생깁니다."
+        )
+        fig_yearly = go.Figure()
+        fig_yearly.add_trace(go.Scatter(
+            x=fc_with_day["ds"],
+            y=annual_effect,
+            mode='lines',
+            line=dict(color='#f107a3', width=2),
+            name='연간 계절 효과',
+            customdata=fc_with_day[["day_kr", "sunset_time"]],
+            hovertemplate='%{x|%Y-%m-%d} (%{customdata[0]})<br>일몰: %{customdata[1]:.1f}시<br>효과: %{y:+.3f}%p<extra></extra>'
+        ))
+        fig_yearly.add_hline(y=0, line_dash="dash", line_color="rgba(255, 255, 255, 0.3)", line_width=1)
+        fig_yearly.update_layout(
+            plot_bgcolor='rgba(0, 0, 0, 0)',
+            paper_bgcolor='rgba(0, 0, 0, 0)',
+            font=dict(color='white'),
+            height=300,
+            margin=dict(l=20, r=20, t=20, b=20),
+            xaxis=dict(gridcolor='rgba(123, 47, 247, 0.2)'),
+            yaxis=dict(gridcolor='rgba(123, 47, 247, 0.2)', title="효과 (%p)")
+        )
+        st.plotly_chart(fig_yearly, use_container_width=True)
 
         # 4. Holidays Effect (공휴일 효과)
         if 'holidays' in fc.columns:
@@ -902,62 +918,16 @@ def main():
             else:
                 st.info("예측 기간에 유의미한 공휴일 효과가 없습니다.")
 
-        # 5. Sunset Time Effect (일몰 시각 효과)
-        st.markdown("#### 🌅 일몰 시각 - 일몰 타이밍의 영향")
-
-        # 일몰 효과 계산
-        sunset_effect = fc["yhat"].copy()
-        if 'trend' in fc.columns:
-            sunset_effect = sunset_effect - fc["trend"]
-        if 'weekly' in fc.columns:
-            sunset_effect = sunset_effect - fc["weekly"]
-        if 'yearly' in fc.columns:
-            sunset_effect = sunset_effect - fc["yearly"]
-        if 'holidays' in fc.columns:
-            sunset_effect = sunset_effect - fc["holidays"]
-
-        # 일몰 효과 시계열 차트
-        fig_sunset_effect = go.Figure()
-        fig_sunset_effect.add_trace(go.Scatter(
-            x=fc_with_day["ds"],
-            y=sunset_effect,
-            mode='lines',
-            line=dict(color='#FFA500', width=2),
-            fill='tonexty',
-            fillcolor='rgba(255, 165, 0, 0.2)',
-            name='일몰 효과',
-            customdata=fc_with_day[["day_kr", "sunset_time"]],
-            hovertemplate='%{x|%Y-%m-%d} (%{customdata[0]})<br>일몰 시각: %{customdata[1]:.1f}시<br>시청률 효과: %{y:+.3f}%p<extra></extra>'
-        ))
-
-        # 0선 추가
-        fig_sunset_effect.add_hline(
-            y=0,
-            line_dash="dash",
-            line_color="rgba(255, 255, 255, 0.3)",
-            line_width=1
+        # 5. 일몰 시각 안내 (개별 '효과'로 그리지 않음 — 위 연간 계절 효과에 포함됨)
+        st.markdown("#### 🌅 일몰 시각에 대하여")
+        st.info(
+            "일몰 시각의 영향은 위 **연간 계절 효과**에 이미 포함되어 있습니다.\n\n"
+            "일몰과 연 계절성은 연중 날짜만으로 정해지는 거의 동일한 신호(상관계수 ≈ 1.0)라, "
+            "일몰만 따로 떼어 '효과'로 그리면 두 성분이 계수를 나눠 갖는 과정에서 "
+            "**부호가 뒤집혀** 보이는 해석 함정이 생깁니다 "
+            "(실제로는 '일몰이 늦을수록 시청률↓'인데 +로 표시되는 현상).\n\n"
+            "참고로 원자료 기준 단순 상관은 약 **-0.45** — 일몰이 늦은 여름일수록 시청률이 낮습니다."
         )
-
-        fig_sunset_effect.update_layout(
-            plot_bgcolor='rgba(0, 0, 0, 0)',
-            paper_bgcolor='rgba(0, 0, 0, 0)',
-            font=dict(color='white'),
-            height=300,
-            margin=dict(l=20, r=20, t=20, b=20),
-            xaxis=dict(
-                title="날짜",
-                gridcolor='rgba(123, 47, 247, 0.2)'
-            ),
-            yaxis=dict(
-                title="시청률 효과 (%p)",
-                gridcolor='rgba(123, 47, 247, 0.2)',
-                zeroline=True,
-                zerolinecolor='rgba(255, 255, 255, 0.3)',
-                zerolinewidth=1
-            ),
-            showlegend=False
-        )
-        st.plotly_chart(fig_sunset_effect, use_container_width=True)
 
         # 요약 정보
         st.markdown("---")
@@ -984,31 +954,16 @@ def main():
                 )
 
         with col3:
-            # 일몰 효과 계산 (이미 위에서 계산됨)
+            # 일몰은 연간 계절 효과에 포함 → 계절 변동폭으로 표시 (개별 일몰 계수는 해석 불가)
+            annual_range = annual_effect.max() - annual_effect.min()
+            help_txt = "연 계절성 + 일몰 시각을 합친 연중 최대-최저 효과 차이"
             if 'sunset_time' in fc.columns:
-                # 실제 일몰 시각 범위
-                actual_sunset_min = fc["sunset_time"].min()
-                actual_sunset_max = fc["sunset_time"].max()
-
-                # 일몰 효과 (시청률에 미치는 영향)
-                sunset_effect_calc = fc["yhat"].copy()
-                if 'trend' in fc.columns:
-                    sunset_effect_calc = sunset_effect_calc - fc["trend"]
-                if 'weekly' in fc.columns:
-                    sunset_effect_calc = sunset_effect_calc - fc["weekly"]
-                if 'yearly' in fc.columns:
-                    sunset_effect_calc = sunset_effect_calc - fc["yearly"]
-                if 'holidays' in fc.columns:
-                    sunset_effect_calc = sunset_effect_calc - fc["holidays"]
-
-                effect_range = sunset_effect_calc.max() - sunset_effect_calc.min()
-                st.metric(
-                    "일몰 효과 범위",
-                    f"±{effect_range/2:.3f}%",
-                    help=f"일몰 시각: {actual_sunset_min:.1f}시~{actual_sunset_max:.1f}시 (시청률 영향)"
-                )
-            else:
-                st.metric("일몰 효과", f"±{sunset_effect.std():.3f}%")
+                help_txt += f" (일몰 {fc['sunset_time'].min():.1f}시~{fc['sunset_time'].max():.1f}시 포함)"
+            st.metric(
+                "연간 계절 변동폭",
+                f"±{annual_range/2:.3f}%",
+                help=help_txt
+            )
 
     # Tab 3: 데이터 테이블
     with tabs[2]:
