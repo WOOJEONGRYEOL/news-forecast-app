@@ -1,4 +1,6 @@
 streamlit>=1.28.0
+# Starlette 1.4.0(2026-08-05)의 GZipResponder 변경과 현재 Streamlit 비호환 → 1.4 미만 고정
+starlette<1.4.0
 prophet>=1.2.0
 cmdstanpy>=1.3.0
 pandas>=2.0.0
