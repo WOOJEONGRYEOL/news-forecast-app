@@ -1,14 +1,12 @@
-# 정상 부팅 확인된 조합으로 고정 (의존성 자동 상승 재발 방지)
-# 웹 스택: fec554b 배포에서 부팅 확인된 streamlit 1.61.0 + starlette<1.4.0 조합.
-# starlette는 범위로 두어 streamlit이 요구하는 호환 버전으로 해석되게 함(1.4.0만 차단).
-streamlit==1.61.0
+streamlit>=1.28.0
+# Starlette 1.4.0(2026-08-05)의 GZipResponder 변경과 현재 Streamlit 비호환 → 1.4 미만 고정
 starlette<1.4.0
-prophet==1.3.0
-cmdstanpy==1.3.0
-pandas==3.0.5
-numpy==2.5.1
-matplotlib==3.11.1
-plotly==6.9.0
-korean-lunar-calendar==0.4.0
-requests==2.34.2
-ephem==4.2.1
+prophet>=1.2.0
+cmdstanpy>=1.3.0
+pandas>=2.0.0
+numpy>=2.1.0
+matplotlib>=3.7.0
+plotly>=5.17.0
+korean-lunar-calendar>=0.3.0
+requests>=2.31.0
+ephem>=4.1.5
